@@ -1,0 +1,11 @@
+MERIDIAN AI | Controle de Embarques - V3
+app.R
+R/ai_extract.R
+R/helpers.R
+www/styles.css
+www/logo_meridian.jpeg
+data/controle_inicial.csv
+data/mapeamento_controle.csv
+install_packages.R
+README.md
+ATUALIZACAO_V3.txt

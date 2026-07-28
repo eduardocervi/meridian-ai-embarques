@@ -1,0 +1,9 @@
+MERIDIAN AI - correção V2.1
+
+- Corrigido erro Shiny: validate: is.character(txt) is not TRUE.
+- Validação da API Key agora usa notificação e não bloqueia a sessão.
+- Modelos atualizados para IDs reais da API: gpt-5, gpt-5-mini e gpt-4.1.
+- Níveis de detalhe da imagem ajustados para high, auto e low.
+- Chave da API normalizada antes da chamada HTTP.
+
+Teste recomendado: processar somente a página 1 antes de executar o lote completo.

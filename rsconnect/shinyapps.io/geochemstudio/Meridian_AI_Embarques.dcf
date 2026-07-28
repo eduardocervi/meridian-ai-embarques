@@ -1,0 +1,12 @@
+name: Meridian_AI_Embarques
+title: Meridian_AI_Embarques
+username: geochemstudio
+account: geochemstudio
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 17649521
+bundleId: 12334500
+url: https://geochemstudio.shinyapps.io/Meridian_AI_Embarques/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
