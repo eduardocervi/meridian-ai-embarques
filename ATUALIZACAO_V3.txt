@@ -1,0 +1,25 @@
+MERIDIAN AI - V3
+
+1. DESEMPENHO
+- PDF convertido para JPEG otimizado em vez de PNG pesado.
+- Perfil Rápido usa 165 dpi + GPT-5 mini.
+- Até 4 chamadas simultâneas via httr2::req_perform_parallel().
+- Resposta da IA foi compactada: os rótulos dos 47 itens não são mais repetidos pela API.
+- Fallback inteligente: GPT-5 só reprocessa páginas em que campos críticos estejam ausentes ou duvidosos.
+- Auditoria registra página, modelo, MIC e status.
+
+2. CONTROLE AUTOMÁTICO
+- Por padrão, cada MIC consolidado gera automaticamente uma linha na aba Controle.
+- A estrutura principal permanece exatamente A:M da planilha CONTROLE_EMBARQUES:
+  URF | IMPORTADOR | EXPORTADOR | MERCADORIA | FATURA | DI | PROCESSO | CRT |
+  TRANSPORTADORA | DATA REGISTRO | DATA LIBERAÇÃO | ARQUIVO | ATUALIZAÇÃO
+- FATURA = item 36, com extração do padrão 001-002-0000255.
+- CRT = item 23, preservado exatamente.
+- Importador = item 34; Exportador = item 33; Mercadoria = item 38; Transportadora = item 1.
+- URF é inferida do item 24.
+- DI, PROCESSO, DATA REGISTRO e DATA LIBERAÇÃO não são inventados e ficam para base importada/preenchimento manual.
+- Ao importar Excel/XLSM, se existir aba CONTROLE ela é escolhida automaticamente.
+- Duplicidades são evitadas por CRT e/ou FATURA; registros existentes têm apenas células vazias complementadas.
+
+3. NOVA ABA AUDITORIA
+- Log por página para facilitar conferência de lotes grandes e diagnóstico de falhas.
