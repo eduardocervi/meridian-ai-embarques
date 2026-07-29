@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 180" role="img" aria-label="MeridIAn Comex">
+  <defs>
+    <linearGradient id="orbit" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2F5FAA"/>
+      <stop offset="1" stop-color="#173B78"/>
+    </linearGradient>
+  </defs>
+  <g transform="translate(14,12)">
+    <ellipse cx="78" cy="78" rx="67" ry="67" fill="#F8FAFD" stroke="#E2E8F2" stroke-width="2"/>
+    <path d="M18 87 C47 38 104 22 144 32 C111 43 76 67 45 109 C34 103 25 96 18 87Z" fill="url(#orbit)"/>
+    <path d="M30 103 C65 99 111 72 151 25 C144 72 107 125 54 139 C44 130 36 117 30 103Z" fill="#2F5FAA" opacity=".92"/>
+    <path d="M42 104 C78 91 112 64 135 39" fill="none" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round"/>
+    <path d="M36 119 C83 148 145 111 163 56" fill="none" stroke="#F28A32" stroke-width="4" stroke-linecap="round" opacity=".95"/>
+  </g>
+  <g font-family="Inter, Arial, sans-serif">
+    <text x="195" y="88" font-size="58" font-weight="700" fill="#173B78" letter-spacing="-1.8">Merid</text>
+    <text x="339" y="88" font-size="58" font-weight="800" fill="#F28A32" letter-spacing="-1.8">IA</text>
+    <text x="406" y="88" font-size="58" font-weight="700" fill="#173B78" letter-spacing="-1.8">n</text>
+    <text x="198" y="132" font-size="25" font-weight="650" fill="#2F5FAA" letter-spacing="8">COMEX</text>
+    <line x1="198" y1="148" x2="480" y2="148" stroke="#D9E1ED" stroke-width="2"/>
+    <text x="198" y="171" font-size="13" font-weight="500" fill="#748197" letter-spacing="1.5">INTELIGÊNCIA OPERACIONAL</text>
+  </g>
+</svg>

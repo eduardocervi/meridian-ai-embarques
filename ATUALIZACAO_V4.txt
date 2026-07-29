@@ -1,0 +1,12 @@
+MERIDIAN AI -> MeridIAn Comex V4
+
+1. Rebranding completo para MeridIAn Comex.
+2. Novo logo vetorial e PNG seguindo azul/laranja da Meridian.
+3. Nova interface de produto SaaS com sidebar profissional.
+4. Novos módulos: Movimentações, Processos, Cargas, Pendências, Importações, Relatórios, Pesquisa, Cadastros.
+5. Extração MIC/DTA com OpenAI preservada.
+6. Mapeamento automático para controle preservado.
+7. Adapter inicial SEARA para relatórios Excel.
+8. Camada PostgreSQL e migration inicial incluídas.
+9. Aplicativo segue funcional em modo sessão até o PostgreSQL ser configurado.
+10. Antes do Push execute rsconnect::writeManifest().

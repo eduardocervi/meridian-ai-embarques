@@ -2,6 +2,13 @@
 .Rhistory
 .RData
 .Ruserdata
+.Renviron
 .httr-oauth
 .DS_Store
 .quarto
+*.pdf
+*.xls
+*.xlsx
+*.xlsm
+uploads/
+tmp/
