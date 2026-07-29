@@ -66,3 +66,7 @@ data/
 ## Segurança
 
 Nunca versione `.Renviron`, chaves OpenAI, credenciais PostgreSQL ou documentos reais de clientes em repositório público.
+
+## Login de acesso (v4.3)
+
+O aplicativo possui uma tela inicial de autenticação. O usuário padrão é `meridian`; a senha padrão é validada por hash e não fica armazenada em texto puro no repositório. Para produção, é possível substituir as credenciais pelos secrets `MERIDIAN_APP_USER` e `MERIDIAN_APP_PASSWORD` no Posit Connect Cloud.

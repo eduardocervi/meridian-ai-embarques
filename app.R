@@ -27,14 +27,36 @@ sidebar_link <- function(id,label,icon_name) actionLink(id,tagList(icon(icon_nam
 section_head <- function(kicker,title,subtitle=NULL,action=NULL) div(class="page-head",div(div(class="page-kicker",kicker),h1(title),if(!is.null(subtitle)) p(subtitle)),action)
 empty_hint <- function(txt) div(class="empty-hint",icon("circle-info"),span(txt))
 
-ui <- page_fillable(
-  theme=app_theme,
-  tags$head(tags$link(rel="stylesheet",href="styles.css"), tags$meta(name="viewport",content="width=device-width, initial-scale=1")),
+login_ui <- function(error = NULL) {
+  div(class="login-shell",
+    div(class="login-orbit login-orbit-one"),
+    div(class="login-orbit login-orbit-two"),
+    div(class="login-panel",
+      div(class="login-brand",
+        tags$img(src="logo_meridian_comex.svg", class="login-logo", alt="MeridIAn Comex"),
+        div(class="login-eyebrow","SISTEMA DE INTELIGÊNCIA OPERACIONAL"),
+        h1("Bem-vindo ao MeridIAn Comex"),
+        p("Acesse o ambiente de gestão de processos, cargas e inteligência documental da Meridian.")
+      ),
+      div(class="login-form",
+        div(class="login-form-head",h2("Acessar plataforma"),p("Informe suas credenciais para continuar.")),
+        textInput("login_user","Usuário",placeholder="Digite seu usuário",width="100%"),
+        passwordInput("login_password","Senha",placeholder="Digite sua senha",width="100%"),
+        if (!is.null(error)) div(class="login-error",icon("circle-exclamation"),span(error)),
+        actionButton("login_btn","Entrar",icon=icon("arrow-right"),class="btn btn-primary login-submit"),
+        div(class="login-security",icon("shield-halved"),span("Acesso restrito • Sessão protegida"))
+      )
+    ),
+    div(class="login-footer",span("Meridian Comissária de Despachos Aduaneiros"),span("MeridIAn Comex • v4.3"))
+  )
+}
+
+app_shell_ui <- function() {
   div(class="app-shell",
-    aside(class="app-sidebar",
+    tags$aside(class="app-sidebar",
       div(class="brand-zone",tags$img(src="logo_meridian_comex.svg",class="brand-logo",alt="MeridIAn Comex")),
       div(class="side-section",div(class="side-label","OPERAÇÃO"),
-        sidebar_link("nav_dashboard","Dashboard","grid-2x2"), sidebar_link("nav_movements","Movimentações","arrow-right-arrow-left"),
+        sidebar_link("nav_dashboard","Dashboard","table-cells-large"), sidebar_link("nav_movements","Movimentações","arrow-right-arrow-left"),
         sidebar_link("nav_processes","Processos","folder-open"), sidebar_link("nav_loads","Cargas","truck-fast"), sidebar_link("nav_pending","Pendências","triangle-exclamation")
       ),
       div(class="side-section",div(class="side-label","ENTRADAS & IA"),
@@ -44,12 +66,17 @@ ui <- page_fillable(
         sidebar_link("nav_reports","Relatórios","chart-line"), sidebar_link("nav_search","Pesquisa","magnifying-glass"), sidebar_link("nav_audit","Auditoria","clock-rotate-left")
       ),
       div(class="side-section",div(class="side-label","SISTEMA"), sidebar_link("nav_master","Cadastros","building"), sidebar_link("nav_settings","Configurações","sliders")),
-      div(class="sidebar-foot",div(class="product-chip",span(class="dot-live"),"Connect Cloud"),small("Meridian Comex • v4.0"))
+      div(class="sidebar-foot",div(class="product-chip",span(class="dot-live"),"Connect Cloud"),tags$small("MeridIAn Comex • v4.3"))
     ),
-    main(class="app-main",
+    tags$main(class="app-main",
       div(class="topbar",
         div(class="topbar-search",icon("magnifying-glass"),textInput("quick_query",NULL,placeholder="Buscar processo, DI, fatura, CRT ou MIC...")),
-        div(class="topbar-actions",uiOutput("db_status"),div(class="last-update",textOutput("top_last_update",inline=TRUE)),div(class="user-pill",div(class="user-avatar","EC"),div(strong("Operação"),small("Meridian Comex"))))
+        div(class="topbar-actions",
+          uiOutput("db_status"),
+          div(class="last-update",textOutput("top_last_update",inline=TRUE)),
+          div(class="user-pill",div(class="user-avatar","M"),div(strong("meridian"),tags$small("MeridIAn Comex"))),
+          actionButton("logout_btn", NULL, icon=icon("right-from-bracket"), class="logout-btn", title="Sair")
+        )
       ),
       div(class="workspace",
         navset_hidden(id="workspace_nav", selected="Dashboard",
@@ -108,10 +135,54 @@ ui <- page_fillable(
       )
     )
   )
+}
+
+ui <- page_fillable(
+  theme=app_theme,
+  tags$head(
+    tags$link(rel="stylesheet",href="styles.css"),
+    tags$meta(name="viewport",content="width=device-width, initial-scale=1"),
+    tags$title("MeridIAn Comex")
+  ),
+  uiOutput("root_ui")
 )
 
-
 server <- function(input, output, session) {
+  auth <- reactiveValues(logged_in = FALSE, login_error = NULL)
+
+  output$root_ui <- renderUI({
+    if (isTRUE(auth$logged_in)) app_shell_ui() else login_ui(auth$login_error)
+  })
+
+  observeEvent(input$login_btn, {
+    user <- trimws(as.character(input$login_user %||% ""))
+    pass <- as.character(input$login_password %||% "")
+
+    # Em produção, os secrets podem substituir as credenciais padrão via Connect Cloud.
+    expected_user <- Sys.getenv("MERIDIAN_APP_USER", unset = "meridian")
+    env_pass <- Sys.getenv("MERIDIAN_APP_PASSWORD", unset = "")
+    default_pass_hash <- "7914a51b174f2af3c060ac57e174f0d343a256d6a024b9987aa059a2a34ea6ae"
+    password_ok <- if (nzchar(env_pass)) {
+      identical(pass, env_pass)
+    } else {
+      identical(digest::digest(pass, algo = "sha256", serialize = FALSE), default_pass_hash)
+    }
+
+    if (identical(user, expected_user) && isTRUE(password_ok)) {
+      auth$logged_in <- TRUE
+      auth$login_error <- NULL
+    } else {
+      auth$logged_in <- FALSE
+      auth$login_error <- "Usuário ou senha inválidos."
+      updateTextInput(session, "login_password", value = "")
+    }
+  }, ignoreInit = TRUE)
+
+  observeEvent(input$logout_btn, {
+    auth$logged_in <- FALSE
+    auth$login_error <- NULL
+  }, ignoreInit = TRUE)
+
   initial_control <- tryCatch(
     ensure_control_columns(read.csv("data/controle_inicial.csv", check.names = FALSE, stringsAsFactors = FALSE, fileEncoding = "UTF-8")),
     error = function(e) as.data.frame(setNames(replicate(length(control_columns), character(0), simplify=FALSE), control_columns), check.names=FALSE)
