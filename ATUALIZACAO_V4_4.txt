@@ -1,0 +1,19 @@
+MeridIAn Comex V4.4
+
+IMPORTAÇÃO DE RELATÓRIOS COM IA SEMÂNTICA
+
+Problema corrigido:
+- A versão anterior usava coordenadas fixas (B5, F5, B6...) para ler relatórios SEARA.
+- Em layouts reais diferentes, isso deslocava os campos. Exemplo observado: DI foi importada como IMPORTADOR e processo como EXPORTADOR.
+
+Nova arquitetura:
+1. R lê a planilha em modo somente leitura.
+2. O sistema converte as células preenchidas em uma grade com coordenadas e valores.
+3. GPT-5 mini interpreta rótulos, contexto e layout real da planilha.
+4. A IA identifica importador, exportador, mercadoria, fatura, DI, processo, CRT, transportadora, DAT, datas e peso previsto.
+5. A IA identifica também a linha de cabeçalho e as colunas da tabela de cargas.
+6. O R usa o mapeamento identificado para extrair as cargas diretamente da planilha.
+7. A pré-visualização mostra método, confiança e coordenadas identificadas pela IA.
+
+A IA NÃO modifica os arquivos originais.
+A OPENAI_API_KEY já usada para leitura de MIC/DTA é reutilizada automaticamente.

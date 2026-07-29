@@ -1,0 +1,13 @@
+MeridIAn Comex V5.0
+- Dashboard operacional interativo por período.
+- KPIs de clientes, processos, novas cargas, peso, novos processos e alertas.
+- Painel "O que mudou?" agrupado por cliente, unidade, produto e URF.
+- Central de alertas configurável por dias sem atualização.
+- Histórico orientado por eventos em memória de sessão e schema PostgreSQL preparado.
+- Eventos NOVO_PROCESSO, PROCESSO_ATUALIZADO, NOVA_CARGA e PROCESSO_FINALIZADO.
+- Deduplicação de cargas importadas na sessão para evitar eventos repetidos.
+- Painel de produtividade operacional por analista.
+- Gráficos de movimentação por aduana e cliente.
+- Movimentações passa a exibir histórico de eventos, cargas e peso do período.
+- Exportação gerencial inclui eventos, produtividade, alertas e resumo de movimentação.
+- Migration db/002_events_dashboard.sql adicionada para persistência futura/produção.

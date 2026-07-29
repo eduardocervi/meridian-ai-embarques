@@ -70,3 +70,7 @@ Nunca versione `.Renviron`, chaves OpenAI, credenciais PostgreSQL ou documentos 
 ## Login de acesso (v4.3)
 
 O aplicativo possui uma tela inicial de autenticação. O usuário padrão é `meridian`; a senha padrão é validada por hash e não fica armazenada em texto puro no repositório. Para produção, é possível substituir as credenciais pelos secrets `MERIDIAN_APP_USER` e `MERIDIAN_APP_PASSWORD` no Posit Connect Cloud.
+
+
+## V5.0 - Gestão orientada por eventos
+A V5.0 adiciona dashboard operacional, histórico de eventos, painel O que mudou, alertas de processos sem atualização e produtividade. Em modo sessão os eventos vivem durante a sessão. Para histórico permanente e multiusuário, execute também `db/002_events_dashboard.sql` no PostgreSQL e configure os secrets DB_* no Connect Cloud.

@@ -16,6 +16,7 @@ library(htmltools)
 source("R/ai_extract.R")
 source("R/helpers.R")
 source("R/management.R")
+source("R/events.R")
 source("R/adapter_seara.R")
 source("R/db.R")
 
@@ -47,7 +48,7 @@ login_ui <- function(error = NULL) {
         div(class="login-security",icon("shield-halved"),span("Acesso restrito • Sessão protegida"))
       )
     ),
-    div(class="login-footer",span("Meridian Comissária de Despachos Aduaneiros"),span("MeridIAn Comex • v4.3"))
+    div(class="login-footer",span("Meridian Comissária de Despachos Aduaneiros"),span("MeridIAn Comex • v5.0"))
   )
 }
 
@@ -66,7 +67,7 @@ app_shell_ui <- function() {
         sidebar_link("nav_reports","Relatórios","chart-line"), sidebar_link("nav_search","Pesquisa","magnifying-glass"), sidebar_link("nav_audit","Auditoria","clock-rotate-left")
       ),
       div(class="side-section",div(class="side-label","SISTEMA"), sidebar_link("nav_master","Cadastros","building"), sidebar_link("nav_settings","Configurações","sliders")),
-      div(class="sidebar-foot",div(class="product-chip",span(class="dot-live"),"Connect Cloud"),tags$small("MeridIAn Comex • v4.3"))
+      div(class="sidebar-foot",div(class="product-chip",span(class="dot-live"),"Connect Cloud"),tags$small("MeridIAn Comex • v5.0"))
     ),
     tags$main(class="app-main",
       div(class="topbar",
@@ -81,35 +82,62 @@ app_shell_ui <- function() {
       div(class="workspace",
         navset_hidden(id="workspace_nav", selected="Dashboard",
           nav_panel("Dashboard",
-            section_head("VISÃO EXECUTIVA","Operação em um só lugar","Processos, cargas, pendências e inteligência documental conectados em uma única visão.",actionButton("go_import","Nova importação",icon=icon("plus"),class="btn btn-primary btn-hero")),
-            div(class="metrics-grid",metric_card("Processos ativos","dash_active","folder-open"),metric_card("Processos parciais","dash_partial","clock","orange"),metric_card("Finalizados","dash_final","circle-check","green"),metric_card("Cargas / MICs","dash_loads","truck-fast"),metric_card("Pendências","dash_pending","triangle-exclamation","red"),metric_card("Clientes","dash_clients","building")),
+            section_head("CENTRAL OPERACIONAL","MeridIAn Comex","Acompanhe o que movimentou, o que mudou e o que precisa de atenção em tempo real.",actionButton("go_import","Nova importação",icon=icon("plus"),class="btn btn-primary btn-hero")),
+            div(class="dashboard-toolbar",
+              selectInput("dash_period","Período",choices=c("Hoje","Ontem","Últimos 7 dias","Últimos 30 dias","Este mês","Mês anterior","Personalizado"),selected="Hoje"),
+              conditionalPanel("input.dash_period == 'Personalizado'", dateRangeInput("dash_custom_period",NULL,start=Sys.Date()-7,end=Sys.Date(),format="dd/mm/yyyy")),
+              numericInput("alert_days","Alerta sem atualização (dias)",value=3,min=1,max=90,width="190px"),
+              div(class="dashboard-live",span(class="dot-live"),"Painel atualizado pela sessão")
+            ),
+            div(class="metrics-grid",metric_card("Clientes movimentados","dash_mov_clients","building"),metric_card("Processos movimentados","dash_mov_processes","folder-open"),metric_card("Novas cargas","dash_mov_loads","truck-fast","orange"),metric_card("Peso movimentado","dash_mov_weight","weight-hanging","green"),metric_card("Novos processos","dash_mov_new_processes","file-circle-plus"),metric_card("Alertas ativos","dash_alerts","triangle-exclamation","red")),
             div(class="content-grid two-thirds",
-              card(class="product-card",card_header(div(h4("Processos recentes"),span(class="subtle","Estado operacional atual"))),card_body(DTOutput("dashboard_controle"))),
-              card(class="product-card",card_header(div(h4("Inteligência documental"),span(class="subtle","MICs processados na sessão"))),card_body(DTOutput("dashboard_mics")))
+              card(class="product-card dashboard-feature",card_header(div(h4("O que mudou?"),span(class="subtle",textOutput("dash_period_label",inline=TRUE)))),card_body(DTOutput("dash_changes_table"))),
+              card(class="product-card alert-card",card_header(div(h4("Central de alertas"),span(class="subtle","Atuação proativa"))),card_body(DTOutput("dash_alert_table")))
+            ),
+            div(class="content-grid half-grid",
+              card(class="product-card",card_header(div(h4("Movimentação por aduana"),span(class="subtle","Cargas e peso por URF"))),card_body(plotOutput("dash_urf_plot",height="260px"))),
+              card(class="product-card",card_header(div(h4("Movimentação por cliente"),span(class="subtle","Peso movimentado no período"))),card_body(plotOutput("dash_client_plot",height="260px")))
+            ),
+            div(class="content-grid two-thirds",
+              card(class="product-card",card_header(div(h4("Produtividade operacional"),span(class="subtle","Capacidade e distribuição de trabalho"))),card_body(DTOutput("dash_productivity_table"))),
+              card(class="product-card",card_header(div(h4("Estado atual"),span(class="subtle","Snapshot dos processos"))),card_body(DTOutput("dashboard_controle")))
             ),
             div(class="content-grid thirds",
-              card(class="product-card action-card",card_body(div(class="action-icon",icon("cloud-arrow-up")),h4("Importar relatórios"),p("Receba planilhas operacionais e consolide processos e cargas."),actionButton("dash_import","Abrir importações",class="btn btn-outline-primary"))),
-              card(class="product-card action-card",card_body(div(class="action-icon ai",icon("wand-magic-sparkles")),h4("Ler documentos com IA"),p("Extraia MIC/DTA escaneados com visão multimodal e revisão assistida."),actionButton("dash_ai","Abrir IA documental",class="btn btn-outline-primary"))),
-              card(class="product-card action-card",card_body(div(class="action-icon",icon("file-export")),h4("Gerar relatório"),p("Exporte uma visão consolidada de processos, cargas e pendências."),downloadButton("download_management_xlsx","Gerar Excel",class="btn btn-outline-primary")))
+              card(class="product-card action-card",card_body(div(class="action-icon",icon("arrow-right-arrow-left")),h4("Movimentações"),p("Abra o extrato completo de eventos e filtre qualquer período."),actionButton("dash_movements","Ver movimentações",class="btn btn-outline-primary"))),
+              card(class="product-card action-card",card_body(div(class="action-icon ai",icon("wand-magic-sparkles")),h4("Inteligência documental"),p("Extraia MIC/DTA e alimente a operação com dados estruturados."),actionButton("dash_ai","Abrir IA documental",class="btn btn-outline-primary"))),
+              card(class="product-card action-card",card_body(div(class="action-icon",icon("file-export")),h4("Relatório executivo"),p("Exporte snapshot, movimentações, eventos, produtividade e alertas."),downloadButton("download_management_xlsx","Gerar Excel",class="btn btn-outline-primary")))
             )
           ),
           nav_panel("Movimentações",
             section_head("HISTÓRICO OPERACIONAL","Movimentações","Consulte o que mudou, quando mudou e em quais processos."),
             div(class="filter-strip",dateRangeInput("movement_period","Período",start=Sys.Date()-30,end=Sys.Date(),format="dd/mm/yyyy"),selectInput("movement_date_type","Critério",choices=c("Alterações no sistema","Data da operação","Data da importação"),selected="Alterações no sistema")),
-            div(class="metrics-grid compact",metric_card("Registros no período","movement_count","arrow-right-arrow-left"),metric_card("Clientes movimentados","movement_clients","building")),
-            card(class="product-card",card_header(h4("Linha operacional")),card_body(DTOutput("movements_table")))
+            div(class="metrics-grid compact",metric_card("Eventos no período","movement_count","arrow-right-arrow-left"),metric_card("Clientes movimentados","movement_clients","building"),metric_card("Novas cargas","movement_loads","truck-fast","orange"),metric_card("Peso movimentado","movement_weight","weight-hanging","green")),
+            card(class="product-card",card_header(h4("Histórico de eventos")),card_body(DTOutput("movements_table")))
           ),
           nav_panel("Processos",
             section_head("GESTÃO OPERACIONAL","Processos","Acompanhe o estado atual e pesquise por cliente, processo, fatura, DI, CRT, produto ou URF."),
             card(class="product-card",card_body(DTOutput("processes_table")))
           ),
           nav_panel("Cargas",section_head("EMBARQUES","Cargas","Cada MIC/carga é tratado como um registro independente e rastreável."),card(class="product-card",card_body(DTOutput("loads_table")))),
-          nav_panel("Pendências",section_head("FILA DE TRABALHO","Pendências","Pontos que exigem complemento, associação ou revisão operacional."),card(class="product-card",card_body(DTOutput("pending_table")))),
+          nav_panel("Pendências",section_head("FILA DE TRABALHO","Pendências e alertas","Além do que movimentou, acompanhe o que deixou de movimentar."),
+            div(class="filter-strip",numericInput("pending_days","Sem atualização há",value=3,min=1,max=90,width="170px"),span(class="help-note","dias ou mais")),
+            card(class="product-card",card_header(h4("Alertas operacionais")),card_body(DTOutput("pending_alerts_table"))),
+            card(class="product-card",card_header(h4("Pendências cadastrais")),card_body(DTOutput("pending_table")))),
           nav_panel("Importações",
-            section_head("ENTRADA OPERACIONAL","Importar relatórios","Upload em lote com validação prévia. A primeira configuração é o layout SEARA."),
+            section_head("ENTRADA OPERACIONAL","Importar relatórios","Upload em lote com leitura semântica por IA. O sistema interpreta o layout real de cada planilha antes de consolidar os dados."),
             div(class="content-grid split",
-              card(class="product-card",card_header(h4("Relatórios SEARA")),card_body(fileInput("seara_files","Arquivos .xls, .xlsx ou .xlsm",multiple=TRUE,accept=c(".xls",".xlsx",".xlsm")),p(class="help-note","Os arquivos são lidos somente para extração. O original nunca é alterado."),actionButton("process_seara","Processar arquivos validados",class="btn btn-primary w-100",icon=icon("gears")))),
-              card(class="product-card",card_header(h4("Validação antes da importação")),card_body(DTOutput("seara_preview_table")))
+              card(class="product-card",card_header(h4("Relatórios operacionais")),card_body(
+                fileInput("seara_files","Arquivos .xls, .xlsx ou .xlsm",multiple=TRUE,accept=c(".xls",".xlsx",".xlsm")),
+                p(class="help-note","1. Selecione os arquivos. 2. Clique em Validar com IA. 3. Confira a prévia. 4. Só então processe."),
+                actionButton("validate_seara","Validar com IA",class="btn btn-outline-primary w-100",icon=icon("wand-magic-sparkles")),
+                div(style="height:8px"),
+                uiOutput("process_seara_ui"),
+                uiOutput("seara_validation_status")
+              )),
+              card(class="product-card",card_header(h4("Validação antes da importação")),card_body(
+                p(class="help-note","A tabela abaixo é a conferência obrigatória antes da gravação no controle."),
+                DTOutput("seara_preview_table")
+              ))
             ),
             card(class="product-card",card_header(h4("Log desta sessão")),card_body(DTOutput("import_log_table")))
           ),
@@ -199,7 +227,10 @@ server <- function(input, output, session) {
     last_processing = NULL,
     report_preview = data.frame(),
     report_loads = data.frame(),
-    import_log = data.frame()
+    report_parsed = list(),
+    import_log = data.frame(),
+    events = empty_events(),
+    operational_loads = data.frame()
   )
 
   current_api_key <- reactive({
@@ -342,8 +373,10 @@ server <- function(input, output, session) {
         auto_updated <- 0L
         if (isTRUE(input$auto_control)) {
           suggested <- suggest_control_rows(rv$mics, rv$pdf_name)
+          old_control <- rv$control
           synced <- append_control_rows(rv$control, suggested)
           rv$control <- synced$control
+          rv$events <- append_events(rv$events, events_from_control_change(old_control, rv$control, usuario="meridian", arquivo=rv$pdf_name %||% "MIC PDF"))
           auto_added <- length(synced$added)
           auto_updated <- length(synced$skipped)
         }
@@ -622,7 +655,41 @@ server <- function(input, output, session) {
   processes_data <- reactive(processes_from_control(rv$control))
   loads_data <- reactive(loads_from_mics(rv$mics))
   pending_data <- reactive(pending_from_control(rv$control))
-  movements_data <- reactive(movement_summary(rv$control))
+  movements_data <- reactive(rv$events)
+
+  dashboard_bounds <- reactive(period_bounds(input$dash_period %||% "Hoje", input$dash_custom_period))
+  dashboard_events <- reactive(filter_events_period(rv$events, dashboard_bounds()))
+  dashboard_kpis <- reactive(movement_kpis(dashboard_events()))
+  dashboard_changes <- reactive(movement_group_summary(dashboard_events()))
+  dashboard_alerts <- reactive(stale_process_alerts(processes_data(), rv$events, input$alert_days %||% 3))
+
+  output$dash_period_label <- renderText({ b <- dashboard_bounds(); paste(format(b[1],"%d/%m/%Y"),"a",format(b[2],"%d/%m/%Y")) })
+  output$dash_mov_clients <- renderText(fmt_int(dashboard_kpis()$clientes))
+  output$dash_mov_processes <- renderText(fmt_int(dashboard_kpis()$processos))
+  output$dash_mov_loads <- renderText(fmt_int(dashboard_kpis()$cargas))
+  output$dash_mov_weight <- renderText(paste0(format(round(dashboard_kpis()$peso),big.mark=".",decimal.mark=",",scientific=FALSE)," kg"))
+  output$dash_mov_new_processes <- renderText(fmt_int(dashboard_kpis()$novos_processos))
+  output$dash_alerts <- renderText(fmt_int(nrow(dashboard_alerts())))
+  output$dash_changes_table <- renderDT({
+    d <- dashboard_changes(); if(!nrow(d)) return(datatable(data.frame(Status="Nenhuma movimentação registrada no período"),rownames=FALSE,options=list(dom="t")))
+    datatable(d,rownames=FALSE,selection="single",options=list(dom="tip",pageLength=8,scrollX=TRUE))
+  })
+  output$dash_alert_table <- renderDT({
+    d <- dashboard_alerts(); if(!nrow(d)) return(datatable(data.frame(Status="Nenhum processo ultrapassou o limite configurado"),rownames=FALSE,options=list(dom="t")))
+    datatable(d,rownames=FALSE,selection="single",options=list(dom="tip",pageLength=8,scrollX=TRUE))
+  })
+  output$dash_productivity_table <- renderDT({
+    d <- productivity_summary(dashboard_events()); if(!nrow(d)) return(datatable(data.frame(Status="Sem eventos suficientes para produtividade no período"),rownames=FALSE,options=list(dom="t")))
+    datatable(d,rownames=FALSE,options=list(dom="tip",pageLength=8,scrollX=TRUE))
+  })
+  output$dash_urf_plot <- renderPlot({
+    d <- dashboard_events(); validate(need(nrow(d)>0,"Sem movimentação no período")); z <- d %>% group_by(URF) %>% summarise(PESO=sum(PESO,na.rm=TRUE), CARGAS=sum(CARGAS,na.rm=TRUE),.groups="drop") %>% filter(nzchar(URF)) %>% arrange(PESO)
+    validate(need(nrow(z)>0,"Sem URF identificada")); par(mar=c(5,8,2,2)); barplot(z$PESO,names.arg=z$URF,horiz=TRUE,las=1,border=NA,xlab="Peso movimentado (kg)")
+  })
+  output$dash_client_plot <- renderPlot({
+    d <- dashboard_events(); validate(need(nrow(d)>0,"Sem movimentação no período")); z <- d %>% group_by(CLIENTE) %>% summarise(PESO=sum(PESO,na.rm=TRUE),.groups="drop") %>% filter(nzchar(CLIENTE)) %>% arrange(desc(PESO)) %>% head(8) %>% arrange(PESO)
+    validate(need(nrow(z)>0,"Sem cliente identificado")); par(mar=c(5,10,2,2)); barplot(z$PESO,names.arg=z$CLIENTE,horiz=TRUE,las=1,border=NA,xlab="Peso movimentado (kg)")
+  })
 
   output$top_last_update <- renderText({
     if (is.null(rv$control) || !nrow(rv$control)) return("Sem atualizações")
@@ -662,20 +729,25 @@ server <- function(input, output, session) {
   })
   output$movements_table <- renderDT({
     d <- movements_data()
-    if (!nrow(d)) return(datatable(data.frame(Status="Nenhuma movimentação disponível"), rownames=FALSE, options=list(dom="t")))
+    if (!nrow(d)) return(datatable(data.frame(Status="Nenhum evento histórico disponível nesta sessão"), rownames=FALSE, options=list(dom="t")))
     rng <- input$movement_period
-    if (!is.null(rng) && length(rng)==2) d <- d[d$DATA >= rng[1] & d$DATA <= rng[2],,drop=FALSE]
-    datatable(d, rownames=FALSE, filter="top", options=list(scrollX=TRUE, pageLength=20))
+    if (!is.null(rng) && length(rng)==2) d <- d[as.Date(d$DATA_HORA) >= rng[1] & as.Date(d$DATA_HORA) <= rng[2],,drop=FALSE]
+    show <- intersect(c("DATA_HORA","EVENTO","PROCESSO","CLIENTE","UNIDADE","PRODUTO","URF","CARGAS","PESO","USUARIO","ARQUIVO","CAMPO","VALOR_ANTERIOR","VALOR_NOVO"),names(d))
+    datatable(d[,show,drop=FALSE], rownames=FALSE, filter="top", options=list(scrollX=TRUE, pageLength=20))
   })
-  output$movement_count <- renderText({
-    d <- movements_data(); if (!nrow(d)) return("0")
-    rng <- input$movement_period; if (!is.null(rng) && length(rng)==2) d <- d[d$DATA >= rng[1] & d$DATA <= rng[2],,drop=FALSE]
-    fmt_int(nrow(d))
+  movement_filtered <- reactive({
+    d <- movements_data(); if(!nrow(d)) return(d); rng <- input$movement_period
+    if (!is.null(rng) && length(rng)==2) d <- d[as.Date(d$DATA_HORA) >= rng[1] & as.Date(d$DATA_HORA) <= rng[2],,drop=FALSE]
+    d
   })
-  output$movement_clients <- renderText({
-    d <- movements_data(); if (!nrow(d)) return("0")
-    rng <- input$movement_period; if (!is.null(rng) && length(rng)==2) d <- d[d$DATA >= rng[1] & d$DATA <= rng[2],,drop=FALSE]
-    fmt_int(length(unique(d$CLIENTE)))
+  output$movement_count <- renderText(fmt_int(nrow(movement_filtered())))
+  output$movement_clients <- renderText({ d<-movement_filtered(); fmt_int(if(!nrow(d)) 0 else length(unique(d$CLIENTE[nzchar(d$CLIENTE)]))) })
+  output$movement_loads <- renderText({ d<-movement_filtered(); fmt_int(if(!nrow(d)) 0 else sum(d$CARGAS,na.rm=TRUE)) })
+  output$movement_weight <- renderText({ d<-movement_filtered(); paste0(format(round(if(!nrow(d)) 0 else sum(d$PESO,na.rm=TRUE)),big.mark=".",decimal.mark=",",scientific=FALSE)," kg") })
+  output$pending_alerts_table <- renderDT({
+    d <- stale_process_alerts(processes_data(), rv$events, input$pending_days %||% 3)
+    if(!nrow(d)) return(datatable(data.frame(Status="Nenhum alerta para o limite selecionado"),rownames=FALSE,options=list(dom="t")))
+    datatable(d,rownames=FALSE,filter="top",options=list(scrollX=TRUE,pageLength=15))
   })
 
   # Pesquisa global
@@ -702,27 +774,78 @@ server <- function(input, output, session) {
 
   # --- Importador de relatórios SEARA ----------------------------------------
   observeEvent(input$seara_files, {
+    # Novo arquivo invalida qualquer validação anterior.
+    rv$report_parsed <- list()
+    rv$report_preview <- data.frame()
+    rv$report_loads <- data.frame()
+    rv$import_log <- data.frame()
+  }, ignoreInit=TRUE)
+
+  observeEvent(input$validate_seara, {
     req(input$seara_files)
-    previews <- list(); loads <- list(); logs <- list()
-    for (i in seq_len(nrow(input$seara_files))) {
-      f <- input$seara_files[i,]
-      parsed <- tryCatch(parse_seara_report(f$datapath, f$name), error=function(e) e)
-      if (inherits(parsed,"error")) {
-        logs[[length(logs)+1]] <- data.frame(ARQUIVO=f$name, STATUS="Erro", DETALHE=conditionMessage(parsed), stringsAsFactors=FALSE)
-      } else {
-        m <- parsed$meta; m$CARGAS_ENCONTRADAS <- nrow(parsed$loads); m$STATUS_VALIDACAO <- ifelse(is.na(m$FATURA) || is.na(m$PROCESSO), "Revisar", "Pronto")
-        previews[[length(previews)+1]] <- m
-        if (nrow(parsed$loads)) { z<-parsed$loads; z$ARQUIVO<-f$name; loads[[length(loads)+1]]<-z }
-        logs[[length(logs)+1]] <- data.frame(ARQUIVO=f$name, STATUS="Validado", DETALHE=paste(nrow(parsed$loads),"carga(s)"), stringsAsFactors=FALSE)
-      }
+    key <- current_api_key()
+    if (!is.character(key) || length(key) != 1 || is.na(key) || !nzchar(key)) {
+      showNotification("A leitura inteligente dos relatórios usa a mesma OPENAI_API_KEY da extração de MIC.", type="error", duration=10)
+      return()
     }
+    previews <- list(); loads <- list(); logs <- list(); parsed_cache <- list()
+    withProgress(message="Interpretando relatórios com IA", value=0, {
+      for (i in seq_len(nrow(input$seara_files))) {
+        incProgress((i-1)/max(1,nrow(input$seara_files)), detail=paste("Analisando", input$seara_files$name[i]))
+        f <- input$seara_files[i,]
+        parsed <- tryCatch(parse_seara_report(f$datapath, f$name, api_key=key, model="gpt-5-mini"), error=function(e) e)
+        if (inherits(parsed,"error")) {
+          logs[[length(logs)+1]] <- data.frame(ARQUIVO=f$name, STATUS="Erro", DETALHE=conditionMessage(parsed), stringsAsFactors=FALSE)
+          parsed_cache[[i]] <- NULL
+        } else {
+          parsed_cache[[i]] <- parsed
+          m <- parsed$meta; m$CARGAS_ENCONTRADAS <- nrow(parsed$loads); m$STATUS_VALIDACAO <- ifelse(is.na(m$FATURA) || is.na(m$PROCESSO) || grepl("^Revisar", m$CONFIANÇA), "Revisar", "Pronto")
+          previews[[length(previews)+1]] <- m
+          if (nrow(parsed$loads)) { z<-parsed$loads; z$ARQUIVO<-f$name; loads[[length(loads)+1]]<-z }
+          logs[[length(logs)+1]] <- data.frame(ARQUIVO=f$name, STATUS="Validado por IA", DETALHE=paste(nrow(parsed$loads),"carga(s) |",m$CONFIANÇA), stringsAsFactors=FALSE)
+        }
+        incProgress(1/max(1,nrow(input$seara_files)))
+      }
+    })
+    rv$report_parsed <- parsed_cache
     rv$report_preview <- if (length(previews)) do.call(rbind,previews) else data.frame()
     rv$report_loads <- if (length(loads)) do.call(rbind,loads) else data.frame()
     rv$import_log <- if (length(logs)) do.call(rbind,logs) else data.frame()
+    if (nrow(rv$report_preview)) {
+      showNotification(paste(nrow(rv$report_preview), "arquivo(s) analisado(s). Confira a pré-visualização antes de importar."), type="message", duration=8)
+    } else {
+      showNotification("Nenhum arquivo pôde ser validado. Veja o erro exibido na tela e no Log desta sessão.", type="error", duration=12)
+    }
   })
+  output$process_seara_ui <- renderUI({
+    d <- rv$report_preview
+    if (is.null(d) || !nrow(d)) return(NULL)
+    actionButton("process_seara","Importar dados validados",class="btn btn-primary w-100",icon=icon("gears"))
+  })
+
+  output$seara_validation_status <- renderUI({
+    if (is.null(input$seara_files) || !nrow(input$seara_files)) {
+      return(div(class="help-note", style="margin-top:10px;", icon("circle-info"), " Selecione um ou mais relatórios para iniciar."))
+    }
+    d <- rv$report_preview
+    if (is.null(d) || !nrow(d)) {
+      lg <- rv$import_log
+      if (!is.null(lg) && nrow(lg) && any(lg$STATUS == "Erro")) {
+        msg <- paste(lg$DETALHE[lg$STATUS == "Erro"], collapse=" | ")
+        return(div(class="alert alert-danger", style="margin-top:10px;", icon("circle-xmark"), strong(" Falha na análise: "), msg))
+      }
+      return(div(class="help-note", style="margin-top:10px;", icon("triangle-exclamation"), " Arquivos selecionados. Clique em ‘Validar com IA’ para analisar e pré-visualizar os dados."))
+    }
+    n_ready <- sum(d$STATUS_VALIDACAO == "Pronto", na.rm=TRUE)
+    n_review <- sum(d$STATUS_VALIDACAO != "Pronto", na.rm=TRUE)
+    div(class="help-note", style="margin-top:10px;",
+        icon(if (n_review == 0) "circle-check" else "triangle-exclamation"),
+        paste0(" Validação concluída: ", n_ready, " pronto(s), ", n_review, " para revisão."))
+  })
+
   output$seara_preview_table <- renderDT({
     d <- rv$report_preview
-    if (is.null(d) || !nrow(d)) return(datatable(data.frame(Status="Selecione relatórios .xls/.xlsx/.xlsm para validar"),rownames=FALSE,options=list(dom="t")))
+    if (is.null(d) || !nrow(d)) return(datatable(data.frame(Status="Selecione relatórios .xls/.xlsx/.xlsm para a IA interpretar o layout"),rownames=FALSE,options=list(dom="t")))
     datatable(d,rownames=FALSE,options=list(scrollX=TRUE,pageLength=12))
   })
   output$import_log_table <- renderDT({
@@ -732,12 +855,18 @@ server <- function(input, output, session) {
   })
   observeEvent(input$process_seara, {
     req(input$seara_files)
-    if (is.null(rv$report_preview) || !nrow(rv$report_preview)) { showNotification("Valide os arquivos antes de processar.",type="warning"); return() }
+    if (is.null(rv$report_preview) || !nrow(rv$report_preview)) { showNotification("Nenhuma validação disponível. Clique primeiro em ‘Validar com IA’ e confira a tabela de pré-visualização.",type="warning",duration=8); return() }
     added <- 0L; updated <- 0L
     for (i in seq_len(nrow(input$seara_files))) {
-      parsed <- tryCatch(parse_seara_report(input$seara_files$datapath[i], input$seara_files$name[i]), error=function(e) NULL)
+      parsed <- if (length(rv$report_parsed) >= i) rv$report_parsed[[i]] else NULL
       if (is.null(parsed)) next
+      old_control <- rv$control
       sync <- append_control_rows(rv$control, seara_to_control(parsed)); rv$control <- sync$control
+      rv$events <- append_events(rv$events, events_from_control_change(old_control, rv$control, usuario="meridian", arquivo=input$seara_files$name[i]))
+      cand_loads <- normalize_report_loads(parsed, usuario="meridian", arquivo=input$seara_files$name[i])
+      load_sync <- new_load_events(rv$operational_loads, cand_loads, usuario="meridian")
+      rv$operational_loads <- load_sync$loads
+      rv$events <- append_events(rv$events, load_sync$events)
       added <- added + length(sync$added); updated <- updated + length(sync$skipped)
     }
     showNotification(paste(added,"processo(s) incluído(s) e",updated,"registro(s) reconciliado(s)."),type="message",duration=8)
@@ -748,7 +877,7 @@ server <- function(input, output, session) {
     filename=function() paste0("MeridIAn_Comex_Relatorio_",Sys.Date(),".xlsx"),
     content=function(file){
       wb<-openxlsx::createWorkbook(); hs<-openxlsx::createStyle(fgFill="#173B78",fontColour="#FFFFFF",textDecoration="bold")
-      tabs<-list(Processos=processes_data(),Cargas=loads_data(),Movimentacoes=movements_data(),Pendencias=pending_data(),Controle=rv$control)
+      tabs<-list(Resumo_Movimentacao=movement_group_summary(rv$events),Processos=processes_data(),Cargas=loads_data(),Eventos=rv$events,Produtividade=productivity_summary(rv$events),Alertas=stale_process_alerts(processes_data(),rv$events,input$alert_days %||% 3),Pendencias=pending_data(),Controle=rv$control)
       for(nm in names(tabs)){ openxlsx::addWorksheet(wb,nm); openxlsx::writeData(wb,nm,tabs[[nm]],withFilter=TRUE); if(ncol(tabs[[nm]])>0) openxlsx::addStyle(wb,nm,hs,rows=1,cols=seq_len(ncol(tabs[[nm]])),gridExpand=TRUE); openxlsx::freezePane(wb,nm,firstRow=TRUE); openxlsx::setColWidths(wb,nm,cols=seq_len(max(1,ncol(tabs[[nm]]))),widths="auto") }
       openxlsx::saveWorkbook(wb,file,overwrite=TRUE)
     }
@@ -756,6 +885,7 @@ server <- function(input, output, session) {
 
   observeEvent(input$go_import, { bslib::nav_select("workspace_nav", selected="Importações", session=session) })
   observeEvent(input$dash_import, { bslib::nav_select("workspace_nav", selected="Importações", session=session) })
+  observeEvent(input$dash_movements, { bslib::nav_select("workspace_nav", selected="Movimentações", session=session) })
   observeEvent(input$dash_ai, { bslib::nav_select("workspace_nav", selected="Inteligência documental", session=session) })
   observeEvent(input$quick_query, {
     if (!is.null(input$quick_query) && nzchar(trimws(input$quick_query))) { updateTextInput(session,"global_query",value=input$quick_query); bslib::nav_select("workspace_nav",selected="Pesquisa",session=session) }

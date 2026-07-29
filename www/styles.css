@@ -84,3 +84,9 @@ body{overflow:hidden}.app-shell{display:grid;grid-template-columns:258px minmax(
 .logout-btn{width:38px;height:38px;border:1px solid #e1e6ef!important;background:#fff!important;color:#657086!important;border-radius:10px!important;display:flex!important;align-items:center;justify-content:center;padding:0!important;}
 .logout-btn:hover{color:#173B78!important;border-color:#bbc8da!important;background:#f8faff!important;}
 @media(max-width:850px){.login-panel{grid-template-columns:1fr;max-width:520px}.login-brand{min-height:260px;padding:130px 38px 34px}.login-brand h1{font-size:30px}.login-logo{left:36px;top:28px;width:210px}.login-form{padding:40px 38px}.login-footer{display:none}}
+
+/* V5.0 - Central operacional */
+.dashboard-toolbar{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;background:#fff;border:1px solid #e6ebf3;border-radius:14px;padding:14px 16px;margin:0 0 16px}
+.dashboard-toolbar .form-group{margin-bottom:0;min-width:170px}.dashboard-toolbar .shiny-input-container{margin-bottom:0}
+.dashboard-live{margin-left:auto;display:flex;align-items:center;gap:8px;color:#667085;font-size:12px;padding-bottom:10px}.dashboard-feature{min-height:380px}.alert-card{border-top:3px solid #dc3545}.half-grid{grid-template-columns:1fr 1fr}.product-card canvas{max-width:100%}
+@media(max-width:1050px){.half-grid{grid-template-columns:1fr}.dashboard-live{margin-left:0}}

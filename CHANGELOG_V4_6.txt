@@ -1,0 +1,12 @@
+MeridIAn Comex V4.6
+
+- Corrigido o fluxo de validação de relatórios.
+- A validação agora exibe erros diretamente na tela, além do log.
+- O botão de importação só aparece depois de existir uma pré-visualização validada.
+- Importação SEARA passou a usar leitura híbrida:
+  1) procura rótulos semanticamente em qualquer célula da planilha;
+  2) detecta a tabela de cargas pelos títulos;
+  3) usa IA somente como fallback para lacunas/layouts desconhecidos.
+- Não há dependência de coordenadas fixas B5/F6 etc.
+- A aba com maior conteúdo é selecionada automaticamente.
+- A IA continua usando a mesma OPENAI_API_KEY.

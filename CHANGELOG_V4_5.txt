@@ -1,0 +1,7 @@
+MeridIAn Comex V4.5
+- A validação de relatórios deixou de ser implícita ao selecionar o arquivo.
+- Novo botão explícito "Validar com IA".
+- A prévia de validação aparece antes do processamento.
+- Selecionar novos arquivos invalida a validação anterior, evitando processar cache antigo.
+- Status visual indica quantos arquivos estão prontos e quantos precisam de revisão.
+- O botão Processar exige uma validação concluída e mostra instrução clara quando ela não existe.
